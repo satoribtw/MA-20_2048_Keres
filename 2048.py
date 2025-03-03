@@ -3,33 +3,62 @@ Name : 2048.py
 
 Author : Emel Keres
 
-Date : 10.02.2024
+Date : 03.03.2024
 
 Purpose : Projet jeu 2048
 
-Version : 0.2
+Version : 0.3
 
 """
 
+# import
 import random
 from tkinter import *
+from tkinter import messagebox
+
+win = False
+
+def gagner():
+    # fonction qui permet au joueur de gagner si 2048 s'affiche dans une case au hasard et de continuer la partie (4096, 8192)
+    if win == True:
+        return False
+    for line in range(len(number)):
+        for col in range(len(number[line])):
+            if number [line][col] == 2048:
+                return True
+    return False
+
+def is_game_full():
+    # fonction qui fait que si toutes les cases sont remplis, le jeu s'arrete
+    for line in range(len(number)):
+        for col in range(len(number[line])):
+            if number [line][col] == 0:
+                return False
+    return True
+
+def count_mergeable():
+    # cette fonction fait le compte fusionnable
+    count = 0
+    for line in range (len(number)):
+        for col in range (len(number[line])-1):
+            if number [line][col] == number [line][col+1]:
+                count +=1
+
+    for col in range(len(number[0])):
+        for line in range(len(number)-1):
+            if number[line][col] == number[line+1][col]:
+                count += 1
+
+    return count
 
 reset_count = 0
-
-def display_game():
-    for line in range(len(cases)):
-        for col in range(len(cases[line])):
-            cases[line][col].config(
-                text=2**number[line][col],
-                bg=color[number[line][col]]
-            )
 
 def pack_4(a, b, c, d):
     # déplace et fusionne les valeurs d'une ligne ou colonne
     ligne = [a, b, c, d]
     moves = 0
 
-    # tasser les valeurs vers la gaiche
+    # tasser les valeurs vers la gauche
     ligne = [x for x in ligne if x !=0] # sa supprime les 0
     while len(ligne) < 4:
         ligne.append(0) # afficher des 0 apres avoir fait un déplacement a gauche, les 0 vont s'afficher a droite
@@ -51,7 +80,8 @@ def pack_4(a, b, c, d):
 
 def reset_plateau():
     # sa réinitialise le plateau et incrémente le compteur de resets
-    global reset_count
+    global reset_count, win
+    win = False
     reset_count += 1
 
     # rénitialise toutes les cases à 0
@@ -64,17 +94,19 @@ def reset_plateau():
     ajouter_nouveau_nombre()
 
     # met a jour l'affichage
-    mise_a_jour_affichage()
+    display_game()
 
 def ajouter_nouveau_nombre():
-    # ajoute un '2' dans une case vide, ou un '4' après 9 resets
+    # ajoute un '2' qui a 80% de chance de tomber au hasard, il s'ajoute dans une case vide et un '4' qui a 20% de chance de tomber au hasard
     cases_vides = [(i, j) for i in range(4) for j in range(4) if number[i][j] == 0]
-    if cases_vides:
-        i, j = random.choice(cases_vides)
-        number[i][j] = 1 if reset_count % 9 != 0 else 2  # 4 après 9 resets, sinon 2
-        mise_a_jour_affichage()
+    choix = random.choices([2, 4], weights=[80, 20])[0]
+    i1, j1 = random.choice(cases_vides)
+    cases_vides.remove((i1, j1))
+    number[i1][j1] = choix
 
-def mise_a_jour_affichage():
+    display_game()
+
+def display_game():
     # met a jour des nombres afficher sur le plateau
     for i in range(4):
         for j in range(4):
@@ -92,6 +124,11 @@ def mouvement_gauche():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
+        if gagner():
+            win = True
+            messagebox.showinfo("Information", "Vous avez atteint 2048")
+        if is_game_full() and count_mergeable() == 0:
+            messagebox.showinfo("Information", "Vous avez perdu")
 
 def mouvement_droite():
     # déplacement vers la droite avec la flèche directionnel, fusion des cases vers la droite
@@ -103,7 +140,11 @@ def mouvement_droite():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
-
+        if gagner():
+            win = True
+            messagebox.showinfo("Information", "Vous avez atteint 2048")
+        if is_game_full() and count_mergeable() == 0:
+            messagebox.showinfo("Information", "Vous avez perdu")
 
 def mouvement_haut():
     # déplacement vers le haut avec la flèche directionnel, fusion des cases vers le haut
@@ -115,7 +156,11 @@ def mouvement_haut():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
-
+        if gagner():
+            win = True
+            messagebox.showinfo("Information", "Vous avez atteint 2048")
+        if is_game_full() and count_mergeable() == 0:
+            messagebox.showinfo("Information", "Vous avez perdu")
 
 def mouvement_bas():
     # déplacement vers le haut avec la flèche directionnel, fusion des cases vers le bas
@@ -127,7 +172,13 @@ def mouvement_bas():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
+        if gagner():
+            win = True
+            messagebox.showinfo("Information", "Vous avez atteint 2048")
+        if is_game_full() and count_mergeable() == 0:
+            messagebox.showinfo("Information", "Vous avez perdu")
 
+# la fenêtre
 root = Tk()
 root.title("2048")
 root.geometry("500x500")
@@ -140,12 +191,12 @@ cases = [[None for _ in range(4)] for _ in range(4)]
 color = {
     0: "#FFFFFF", 2: "#CDA2BE", 4: "#B5739D", 8: "#C3ABD0", 16: "#A680B8",
     32: "#A9C4EB", 64: "#7EA6E0", 128: "#9AC7BF", 256: "#67AB9F", 512: "#B9E0A5",
-    1024: "#97D077", 2048: "#FFD966"
+    1024: "#97D077", 2048: "#FFD966", 4096: "#FFD966", 8192: "#FFD966"
 }
 
 for i in range(4):
     for j in range(4):
-        cases[i][j] = Label(root, text="", width=7, height=3, relief='solid', font=("Arial", 15), bg=color[0], fg="black")
+        cases[i][j] = Label(root, text="", width=7, height=3, relief='solid', font=("Arial", 15), bg=color[0], fg="white")
         cases[i][j].place(x=70 + 90 * j, y=150 + 85 * i)
 
 # associer les touches aux mouvements (gacuhe, droite, haut, bas)
@@ -171,6 +222,10 @@ lbl_score_top = Label(frame_score_top)
 lbl_score_top.pack()
 lbl_logo = Label(frame_logo, text="2048", font=("Arial", 50))
 lbl_logo.pack(side=LEFT)
+
+# bouton
+btn_nouveau = Button(frame_nouveau,text="Nouveau", font=("Arial", 15), command=reset_plateau)
+btn_nouveau.pack()
 
 # afficher les premiers chiffres
 ajouter_nouveau_nombre()
