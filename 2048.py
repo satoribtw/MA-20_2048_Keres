@@ -3,11 +3,11 @@ Name : 2048.py
 
 Author : Emel Keres
 
-Date : 03.03.2024
+Date : 10.03.2024
 
 Purpose : Projet jeu 2048
 
-Version : 0.3
+Version : Final
 
 """
 
@@ -16,7 +16,17 @@ import random
 from tkinter import *
 from tkinter import messagebox
 
+# variable
+reset_count = 0
+timer_value = 0
 win = False
+
+def update_timer():
+    # cette fonction ajoute des secondes (1s, 2s...)
+    global timer_value
+    timer_value += 1
+    lbl_timer.config(text=f"Temps: {timer_value} s")
+    root.after(1000, update_timer)
 
 def gagner():
     # fonction qui permet au joueur de gagner si 2048 s'affiche dans une case au hasard et de continuer la partie (4096, 8192)
@@ -50,8 +60,6 @@ def count_mergeable():
                 count += 1
 
     return count
-
-reset_count = 0
 
 def pack_4(a, b, c, d):
     # déplace et fusionne les valeurs d'une ligne ou colonne
@@ -93,8 +101,14 @@ def reset_plateau():
     ajouter_nouveau_nombre()
     ajouter_nouveau_nombre()
 
-    # met a jour l'affichage
-    display_game()
+    # remet le temps a 0
+    restart_timer()
+
+def restart_timer():
+    # cette fonction sert a quand on appuie sur le bouton "Nouveau", le timer ce remet a 0
+    global timer_value
+    timer_value = 0
+    lbl_timer.config(text=f"Temps: {timer_value} s")
 
 def ajouter_nouveau_nombre():
     # ajoute un '2' qui a 80% de chance de tomber au hasard, il s'ajoute dans une case vide et un '4' qui a 20% de chance de tomber au hasard
@@ -115,6 +129,7 @@ def display_game():
             cases[i][j].config(text=texte, bg=color.get(valeur, "#FFFFFF"))
 
 def mouvement_gauche():
+    global win
     # déplacement vers la gauche avec la flèche directionnel, fusion des cases vers la gauche
     moves = 0
     for i in range(4):
@@ -131,6 +146,7 @@ def mouvement_gauche():
             messagebox.showinfo("Information", "Vous avez perdu")
 
 def mouvement_droite():
+    global win
     # déplacement vers la droite avec la flèche directionnel, fusion des cases vers la droite
     moves = 0
     for i in range(4):
@@ -147,6 +163,7 @@ def mouvement_droite():
             messagebox.showinfo("Information", "Vous avez perdu")
 
 def mouvement_haut():
+    global win
     # déplacement vers le haut avec la flèche directionnel, fusion des cases vers le haut
     moves = 0
     for j in range(4):
@@ -163,6 +180,7 @@ def mouvement_haut():
             messagebox.showinfo("Information", "Vous avez perdu")
 
 def mouvement_bas():
+    global win
     # déplacement vers le haut avec la flèche directionnel, fusion des cases vers le bas
     moves = 0
     for j in range(4):
@@ -178,13 +196,20 @@ def mouvement_bas():
         if is_game_full() and count_mergeable() == 0:
             messagebox.showinfo("Information", "Vous avez perdu")
 
+def quit():
+    # cette fonction fait quitter la fenêtre
+    global btn_quitter
+    root.quit()
+
 # la fenêtre
 root = Tk()
 root.title("2048")
-root.geometry("500x500")
+root.geometry("620x620")
+root.configure(bg='#CCCCFF')
 
 # grille du jeu (valeurs en puissances de 2)
-number = [[0 for _ in range(4)] for _ in range(4)]  # Plateau vide au départ
+# plateau vide au départ
+number = [[0 for _ in range(4)] for _ in range(4)]
 
 # interface graphique
 cases = [[None for _ in range(4)] for _ in range(4)]
@@ -194,11 +219,6 @@ color = {
     1024: "#97D077", 2048: "#FFD966", 4096: "#FFD966", 8192: "#FFD966"
 }
 
-for i in range(4):
-    for j in range(4):
-        cases[i][j] = Label(root, text="", width=7, height=3, relief='solid', font=("Arial", 15), bg=color[0], fg="white")
-        cases[i][j].place(x=70 + 90 * j, y=150 + 85 * i)
-
 # associer les touches aux mouvements (gacuhe, droite, haut, bas)
 root.bind("<Left>", lambda event: mouvement_gauche())
 root.bind("<Right>", lambda event: mouvement_droite())
@@ -206,29 +226,40 @@ root.bind("<Up>", lambda event: mouvement_haut())
 root.bind("<Down>", lambda event: mouvement_bas())
 
 # frame
-frame_score_top = LabelFrame(root)
-frame_score_top.pack(side=RIGHT)
-frame_score = LabelFrame(frame_score_top)
-frame_score.pack(side=LEFT)
-frame_top = LabelFrame(frame_score_top)
-frame_top.pack(side=RIGHT)
-frame_logo = LabelFrame(root)
+frame_logo = Frame(root, bg='#CCCCFF')
 frame_logo.pack(padx=15, pady=10, fill=X)
-frame_nouveau = LabelFrame(root)
-frame_nouveau.pack()
+frame_nouveau_quitter = Frame(root, bg='#CCCCFF')
+frame_nouveau_quitter.pack(padx=15, fill=X)
+lbl_timer = Label(root, text=f"Temps: {timer_value} s", font=("Arial", 13), bg='#CCCCFF')
+lbl_timer.pack()
+frame_cases = Frame(root, bg='#B3B3B3', width=415, height=430)
+frame_cases.pack(padx=15, pady=25)
+
+# la boucle permet de faire les cases (4 lignes et 4 colonnes) avec la couleur des chiffres, la taille des cases, l'arrière plan des cases
+for i in range(4):
+    for j in range(4):
+        cases[i][j] = Label(frame_cases, text="", width=8, height=4, relief='solid', font=("Arial", 15), bg=color[0], fg="white")
+        cases[i][j].place(x=10 + 100 * j, y=10 + 105 * i)
 
 # label
-lbl_score_top = Label(frame_score_top)
-lbl_score_top.pack()
-lbl_logo = Label(frame_logo, text="2048", font=("Arial", 50))
+lbl_logo = Label(frame_logo, text="2048", font=("Arial", 40), bg='#CCCCFF')
 lbl_logo.pack(side=LEFT)
+lbl_nouveau_quitter = Label(frame_nouveau_quitter, bg='#CCCCFF')
+lbl_nouveau_quitter.pack(side=RIGHT)
+lbl_text = Label(frame_nouveau_quitter, text="Glissez les chiffres et obtenez la tuile 2048 !", font=("Arial", 10), bg='#CCCCFF')
+lbl_text.pack(side=LEFT)
 
 # bouton
-btn_nouveau = Button(frame_nouveau,text="Nouveau", font=("Arial", 15), command=reset_plateau)
-btn_nouveau.pack()
+btn_quitter = Button(frame_nouveau_quitter,text="Quitter", font=("Arial", 10), bg='#B3B3B3', command=quit)
+btn_quitter.pack(side=RIGHT)
+btn_nouveau = Button(frame_nouveau_quitter,text="Nouveau", font=("Arial", 10), bg='#B3B3B3', command=reset_plateau)
+btn_nouveau.pack(side=RIGHT, padx=10)
 
 # afficher les premiers chiffres
 ajouter_nouveau_nombre()
 ajouter_nouveau_nombre()
+
+# affiche le timer
+update_timer()
 
 root.mainloop()
