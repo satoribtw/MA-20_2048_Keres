@@ -3,7 +3,7 @@ Name : 2048.py
 
 Author : Emel Keres
 
-Date : 10.03.2024
+Date : 17.03.2024
 
 Purpose : Projet jeu 2048
 
@@ -19,18 +19,21 @@ from tkinter import messagebox
 # variable
 reset_count = 0
 timer_value = 0
+timer_running = True
+timer_id = None
 win = False
 
 def update_timer():
     # cette fonction ajoute des secondes (1s, 2s...)
-    global timer_value
-    timer_value += 1
-    lbl_timer.config(text=f"Temps: {timer_value} s")
-    root.after(1000, update_timer)
+    global timer_value, timer_running, timer_id
+    if timer_running:
+        timer_value += 1
+        lbl_timer.config(text=f"Temps: {timer_value} s")
+        timer_id = root.after(1000, update_timer)
 
 def gagner():
-    # fonction qui permet au joueur de gagner si 2048 s'affiche dans une case au hasard et de continuer la partie (4096, 8192)
-    if win == True:
+    # cette fonction qui permet au joueur de gagner si 2048 s'affiche dans une case au hasard et de continuer la partie (4096, 8192)
+    if win is True :
         return False
     for line in range(len(number)):
         for col in range(len(number[line])):
@@ -39,7 +42,7 @@ def gagner():
     return False
 
 def is_game_full():
-    # fonction qui fait que si toutes les cases sont remplis, le jeu s'arrete
+    # cette fonction fait que si toutes les cases sont remplis, le jeu s'arrête
     for line in range(len(number)):
         for col in range(len(number[line])):
             if number [line][col] == 0:
@@ -52,7 +55,7 @@ def count_mergeable():
     for line in range (len(number)):
         for col in range (len(number[line])-1):
             if number [line][col] == number [line][col+1]:
-                count +=1
+                count += 1
 
     for col in range(len(number[0])):
         for line in range(len(number)-1):
@@ -69,7 +72,7 @@ def pack_4(a, b, c, d):
     # tasser les valeurs vers la gauche
     ligne = [x for x in ligne if x !=0] # sa supprime les 0
     while len(ligne) < 4:
-        ligne.append(0) # afficher des 0 apres avoir fait un déplacement a gauche, les 0 vont s'afficher a droite
+        ligne.append(0) # afficher des 0 apres avoir fait un déplacement (par ex. a gauche), les 0 vont s'afficher (par ex. a droite)
     if [a, b, c, d] != ligne:
         moves += 1
 
@@ -87,7 +90,7 @@ def pack_4(a, b, c, d):
     return ligne[0], ligne[1], ligne[2], ligne[3], moves
 
 def reset_plateau():
-    # sa réinitialise le plateau et incrémente le compteur de resets
+    # cette fonction réinitialise le plateau et incrémente le compteur de resets
     global reset_count, win
     win = False
     reset_count += 1
@@ -101,17 +104,22 @@ def reset_plateau():
     ajouter_nouveau_nombre()
     ajouter_nouveau_nombre()
 
-    # remet le temps a 0
     restart_timer()
 
 def restart_timer():
     # cette fonction sert a quand on appuie sur le bouton "Nouveau", le timer ce remet a 0
-    global timer_value
+    global timer_value, timer_running, timer_id
     timer_value = 0
+    timer_running = True
     lbl_timer.config(text=f"Temps: {timer_value} s")
 
+    if timer_id is not None:  # vérifie s'il y a un timer en cours
+        root.after_cancel(timer_id)  # annule l'ancien timer
+
+    update_timer()
+
 def ajouter_nouveau_nombre():
-    # ajoute un '2' qui a 80% de chance de tomber au hasard, il s'ajoute dans une case vide et un '4' qui a 20% de chance de tomber au hasard
+    # cette fonction ajoute un '2' qui a 80% de chance de tomber au hasard, il s'ajoute dans une case vide et un '4' qui a 20% de chance de tomber au hasard
     cases_vides = [(i, j) for i in range(4) for j in range(4) if number[i][j] == 0]
     choix = random.choices([2, 4], weights=[80, 20])[0]
     i1, j1 = random.choice(cases_vides)
@@ -121,12 +129,30 @@ def ajouter_nouveau_nombre():
     display_game()
 
 def display_game():
-    # met a jour des nombres afficher sur le plateau
+    # cette fonction met a jour les nombres afficher sur le plateau
     for i in range(4):
         for j in range(4):
             valeur = number[i][j]
             texte = str(valeur) if valeur > 0 else ""
             cases[i][j].config(text=texte, bg=color.get(valeur, "#FFFFFF"))
+
+def changer_couleur_fond():
+    # cette fonction sert a afficher des couleurs aléatoirements avec des couleurs prédéfinis
+    couleurs = ["#FFD700", "#FF4500", "#32CD32", "#8A2BE2", "#FF69B4", "#00CED1", "#FF6347"]
+    couleur_aleatoire = random.choice(couleurs)
+
+    # modifie la couleur de fond de la fenêtre
+    root.configure(bg=couleur_aleatoire)
+
+    # modifie la couleur de fond des frames
+    frame_logo.configure(bg=couleur_aleatoire)
+    frame_nouveau_quitter.configure(bg=couleur_aleatoire)
+
+    # modifie la couleur de fond des labels
+    lbl_logo.configure(bg=couleur_aleatoire)
+    lbl_nouveau_quitter.configure(bg=couleur_aleatoire)
+    lbl_text.configure(bg=couleur_aleatoire)
+    lbl_timer.configure(bg=couleur_aleatoire)
 
 def mouvement_gauche():
     global win
@@ -139,11 +165,14 @@ def mouvement_gauche():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
+        changer_couleur_fond()
         if gagner():
             win = True
             messagebox.showinfo("Information", "Vous avez atteint 2048")
         if is_game_full() and count_mergeable() == 0:
-            messagebox.showinfo("Information", "Vous avez perdu")
+            global timer_running
+            timer_running = False  # stoppe le timer
+            messagebox.showinfo("Information", "Vous avez perdu, appuyez sur le bouton Nouveau")
 
 def mouvement_droite():
     global win
@@ -156,11 +185,14 @@ def mouvement_droite():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
+        changer_couleur_fond()
         if gagner():
             win = True
             messagebox.showinfo("Information", "Vous avez atteint 2048")
         if is_game_full() and count_mergeable() == 0:
-            messagebox.showinfo("Information", "Vous avez perdu")
+            global timer_running
+            timer_running = False  # stoppe le timer
+            messagebox.showinfo("Information", "Vous avez perdu, appuyez sur le bouton Nouveau")
 
 def mouvement_haut():
     global win
@@ -173,11 +205,14 @@ def mouvement_haut():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
+        changer_couleur_fond()
         if gagner():
             win = True
             messagebox.showinfo("Information", "Vous avez atteint 2048")
         if is_game_full() and count_mergeable() == 0:
-            messagebox.showinfo("Information", "Vous avez perdu")
+            global timer_running
+            timer_running = False  # stoppe le timer
+            messagebox.showinfo("Information", "Vous avez perdu, appuyez sur le bouton Nouveau")
 
 def mouvement_bas():
     global win
@@ -190,14 +225,17 @@ def mouvement_bas():
         moves += move
     if moves > 0:
         ajouter_nouveau_nombre()
+        changer_couleur_fond()
         if gagner():
             win = True
             messagebox.showinfo("Information", "Vous avez atteint 2048")
         if is_game_full() and count_mergeable() == 0:
-            messagebox.showinfo("Information", "Vous avez perdu")
+            global timer_running
+            timer_running = False  # stoppe le timer
+            messagebox.showinfo("Information", "Vous avez perdu, appuyez sur le bouton Nouveau")
 
 def quit():
-    # cette fonction fait quitter la fenêtre
+    # cette fonction fait quitter la fenêtre avec le bouton "Quitter"
     global btn_quitter
     root.quit()
 
@@ -255,7 +293,7 @@ btn_quitter.pack(side=RIGHT)
 btn_nouveau = Button(frame_nouveau_quitter,text="Nouveau", font=("Arial", 10), bg='#B3B3B3', command=reset_plateau)
 btn_nouveau.pack(side=RIGHT, padx=10)
 
-# afficher les premiers chiffres
+# afficher les deux premiers chiffres sur les cases
 ajouter_nouveau_nombre()
 ajouter_nouveau_nombre()
 
